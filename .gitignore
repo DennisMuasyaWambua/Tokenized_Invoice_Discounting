@@ -1,0 +1,13 @@
+venv/
+*.sqlite3
+*.pyc
+__pycache__/
+.DS_Store
+.env
+.idea/
+.vscode/
+*.log
+coverage/
+*.egg-info/
+dist/
+build/ 
