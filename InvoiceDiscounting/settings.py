@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-*2x9gy+z9$r@8qd2zjq1cfnegpyld(z#)te_+ls(v6*3%t+snu
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['tokenizedinvoicediscounting-production.up.railway.app', 'localhost']
 
 
 # Application definition
