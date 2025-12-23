@@ -13,11 +13,12 @@ class RoleSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     role = RoleSerializer(read_only=True)
+    role_name = serializers.CharField(source='role.short_name', read_only=True)
     
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'mobile_number', 'created_on', 
-                 'is_active', 'role', 'company_name', 'kra_pin']
+                 'is_active', 'role', 'role_name', 'company_name', 'kra_pin']
         read_only_fields = ['id', 'created_on']
 
 

@@ -27,7 +27,8 @@ class RegisterView(APIView):
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 'user': UserSerializer(user).data,
-                'token': token.key
+                'token': token.key,
+                'user_type': user.role.short_name if user.role else None
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -43,7 +44,8 @@ class LoginView(APIView):
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 'user': UserSerializer(user).data,
-                'token': token.key
+                'token': token.key,
+                'user_type': user.role.short_name if user.role else None
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
