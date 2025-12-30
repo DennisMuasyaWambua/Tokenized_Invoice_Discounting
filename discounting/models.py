@@ -142,3 +142,23 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.payment_type} - KES {self.amount} ({self.status})"
+
+
+class KYCDocument(models.Model):
+    """KYC documents for user verification"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='kyc_documents')
+    document_type = models.CharField(max_length=30, choices=[
+        ('national_id', 'National ID'),
+        ('business_certificate', 'Business Certificate'),
+        ('kra_certificate', 'KRA Certificate'),
+    ])
+    document_file = models.FileField(upload_to='kyc_documents/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    verified = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['user', 'document_type']
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.get_document_type_display()}"

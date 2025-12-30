@@ -7,6 +7,8 @@ router.register(r'invoices', views.InvoiceViewSet)
 router.register(r'users', views.UserViewSet)
 router.register(r'contracts', views.ContractViewSet)
 router.register(r'payments', views.PaymentViewSet)
+router.register(r'roles', views.RoleViewSet)
+router.register(r'kyc-documents', views.KYCDocumentViewSet, basename='kyc-documents')
 
 urlpatterns = [
     # API Router URLs

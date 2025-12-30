@@ -9,11 +9,12 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 
-from .models import User, Role, Invoice, Contract, Payment
+from .models import User, Role, Invoice, Contract, Payment, KYCDocument
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, LoginSerializer,
     InvoiceSerializer, InvoiceUploadSerializer, ContractSerializer,
-    PaymentSerializer, FundingRequestSerializer
+    PaymentSerializer, FundingRequestSerializer, KYCDocumentSerializer,
+    KYCDocumentUploadSerializer, RoleSerializer, RoleCreateSerializer
 )
 
 
@@ -62,6 +63,24 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class RoleViewSet(viewsets.ModelViewSet):
+    queryset = Role.objects.filter(is_active=True)
+    serializer_class = RoleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return RoleCreateSerializer
+        return RoleSerializer
+    
+    @action(detail=False, methods=['get'], url_path='active')
+    def active_roles(self, request):
+        """Get only active roles for user registration"""
+        roles = Role.objects.filter(is_active=True)
+        serializer = RoleSerializer(roles, many=True)
+        return Response(serializer.data)
 
 
 class ContractViewSet(viewsets.ModelViewSet):
@@ -328,3 +347,62 @@ class FileUploadView(APIView):
             'filename': file.name,
             'size': file.size
         })
+
+
+class KYCDocumentViewSet(viewsets.ModelViewSet):
+    serializer_class = KYCDocumentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return KYCDocument.objects.filter(user=self.request.user)
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return KYCDocumentUploadSerializer
+        return KYCDocumentSerializer
+    
+    @action(detail=False, methods=['post'], url_path='upload')
+    def upload_document(self, request):
+        serializer = KYCDocumentUploadSerializer(
+            data=request.data, 
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            document = serializer.save()
+            return Response(
+                KYCDocumentSerializer(document).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='status')
+    def kyc_status(self, request):
+        user_docs = KYCDocument.objects.filter(user=request.user)
+        
+        required_docs = ['national_id', 'business_certificate', 'kra_certificate']
+        status_data = {
+            'completed_documents': [],
+            'missing_documents': [],
+            'verification_status': 'pending'
+        }
+        
+        for doc_type in required_docs:
+            doc_exists = user_docs.filter(document_type=doc_type).exists()
+            if doc_exists:
+                doc = user_docs.get(document_type=doc_type)
+                status_data['completed_documents'].append({
+                    'type': doc_type,
+                    'verified': doc.verified,
+                    'uploaded_at': doc.uploaded_at
+                })
+            else:
+                status_data['missing_documents'].append(doc_type)
+        
+        # Determine overall status
+        if len(status_data['completed_documents']) == len(required_docs):
+            all_verified = all(doc['verified'] for doc in status_data['completed_documents'])
+            status_data['verification_status'] = 'verified' if all_verified else 'under_review'
+        else:
+            status_data['verification_status'] = 'incomplete'
+        
+        return Response(status_data)

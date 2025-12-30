@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.utils import timezone
-from .models import User, Role, Invoice, Contract, Payment
+from .models import User, Role, Invoice, Contract, Payment, KYCDocument
 from django.contrib.auth.password_validation import validate_password
 
 
@@ -9,6 +9,17 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ['id', 'name', 'short_name', 'description', 'is_active']
+
+
+class RoleCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ['name', 'short_name', 'description', 'is_active']
+    
+    def validate_short_name(self, value):
+        if Role.objects.filter(short_name=value).exists():
+            raise serializers.ValidationError("Role with this short name already exists.")
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -32,6 +43,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'mobile_number', 'password', 'password_confirm', 
                  'company_name', 'kra_pin', 'role_name']
     
+    def validate_role_name(self, value):
+        if not Role.objects.filter(short_name=value, is_active=True).exists():
+            available_roles = Role.objects.filter(is_active=True).values_list('short_name', flat=True)
+            raise serializers.ValidationError(
+                f"Invalid role. Available roles: {list(available_roles)}"
+            )
+        return value
+    
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords don't match.")
@@ -39,14 +58,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data.pop('password_confirm')
-        role_name = validated_data.pop('role_name', 'supplier')
+        role_name = validated_data.pop('role_name')
         password = validated_data.pop('password')
         
-        # Get or create role
-        role, _ = Role.objects.get_or_create(
-            short_name=role_name,
-            defaults={'name': role_name.title(), 'description': f'{role_name.title()} role'}
-        )
+        # Get existing role (no longer creates roles automatically)
+        try:
+            role = Role.objects.get(short_name=role_name, is_active=True)
+        except Role.DoesNotExist:
+            raise serializers.ValidationError(f"Role '{role_name}' does not exist.")
         
         user = User.objects.create_user(password=password, role=role, **validated_data)
         return user
@@ -167,3 +186,28 @@ class FundingRequestSerializer(serializers.Serializer):
     invoiceId = serializers.IntegerField()
     mpesaNumber = serializers.CharField(max_length=15)
     requestedAmount = serializers.DecimalField(max_digits=15, decimal_places=2)
+
+
+class KYCDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KYCDocument
+        fields = ['id', 'document_type', 'document_file', 'uploaded_at', 'verified', 'verified_at']
+        read_only_fields = ['id', 'uploaded_at', 'verified', 'verified_at']
+
+
+class KYCDocumentUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KYCDocument
+        fields = ['document_type', 'document_file']
+    
+    def create(self, validated_data):
+        user = self.context['request'].user
+        document_type = validated_data['document_type']
+        
+        # Update existing document or create new one
+        kyc_doc, _ = KYCDocument.objects.update_or_create(
+            user=user,
+            document_type=document_type,
+            defaults={'document_file': validated_data['document_file']}
+        )
+        return kyc_doc
