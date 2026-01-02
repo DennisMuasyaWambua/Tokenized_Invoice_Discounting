@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth import login, logout
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
@@ -20,16 +21,28 @@ from .serializers import (
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
     
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             token, created = Token.objects.get_or_create(user=user)
+            
+            # Get user's KYC documents for response
+            kyc_documents = user.kyc_documents.all()
+            kyc_status = {
+                'documents_uploaded': kyc_documents.count(),
+                'total_documents': 3,  # national_id, business_certificate, kra_certificate
+                'verification_complete': all(doc.verified for doc in kyc_documents),
+                'uploaded_documents': [doc.document_type for doc in kyc_documents]
+            }
+            
             return Response({
                 'user': UserSerializer(user).data,
                 'token': token.key,
-                'user_type': user.role.short_name if user.role else None
+                'user_type': user.role.short_name if user.role else None,
+                'kyc_status': kyc_status
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

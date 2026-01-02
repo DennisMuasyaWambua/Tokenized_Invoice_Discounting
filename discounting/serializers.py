@@ -38,10 +38,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True)
     role_name = serializers.CharField(write_only=True)
     
+    # KYC Document fields
+    national_id = serializers.FileField(required=False, write_only=True)
+    business_certificate = serializers.FileField(required=False, write_only=True)
+    kra_certificate = serializers.FileField(required=False, write_only=True)
+    
     class Meta:
         model = User
         fields = ['username', 'email', 'mobile_number', 'password', 'password_confirm', 
-                 'company_name', 'kra_pin', 'role_name']
+                 'company_name', 'kra_pin', 'role_name', 'national_id', 'business_certificate', 'kra_certificate']
     
     def validate_role_name(self, value):
         if not Role.objects.filter(short_name=value, is_active=True).exists():
@@ -61,13 +66,31 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         role_name = validated_data.pop('role_name')
         password = validated_data.pop('password')
         
+        # Extract KYC documents
+        kyc_documents = {}
+        kyc_documents['national_id'] = validated_data.pop('national_id', None)
+        kyc_documents['business_certificate'] = validated_data.pop('business_certificate', None)
+        kyc_documents['kra_certificate'] = validated_data.pop('kra_certificate', None)
+        
         # Get existing role (no longer creates roles automatically)
         try:
             role = Role.objects.get(short_name=role_name, is_active=True)
         except Role.DoesNotExist:
             raise serializers.ValidationError(f"Role '{role_name}' does not exist.")
         
+        # Create user
         user = User.objects.create_user(password=password, role=role, **validated_data)
+        
+        # Create KYC documents
+        from .models import KYCDocument
+        for doc_type, doc_file in kyc_documents.items():
+            if doc_file:
+                KYCDocument.objects.create(
+                    user=user,
+                    document_type=doc_type,
+                    document_file=doc_file
+                )
+        
         return user
 
 
