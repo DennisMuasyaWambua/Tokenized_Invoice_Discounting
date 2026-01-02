@@ -75,7 +75,7 @@ class RoleViewSet(viewsets.ModelViewSet):
             return RoleCreateSerializer
         return RoleSerializer
     
-    @action(detail=False, methods=['get'], url_path='active')
+    @action(detail=False, methods=['get'], url_path='active', permission_classes=[permissions.AllowAny])
     def active_roles(self, request):
         """Get only active roles for user registration"""
         roles = Role.objects.filter(is_active=True)
