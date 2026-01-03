@@ -101,6 +101,379 @@ npx hardhat run scripts/deploy.js --network sepolia
 
 ---
 
+## 📚 API Documentation
+
+### Base URL
+All API endpoints are available at: `https://your-domain.com/api/`
+
+### Authentication
+- **Authentication Type**: Token Authentication
+- **Header Format**: `Authorization: Token <your_token>`
+- **Permissions**: Most endpoints require authentication (except registration, login, and role listing)
+
+---
+
+### 🔐 Authentication Endpoints
+
+#### Register User
+```http
+POST /api/auth/register/
+Content-Type: multipart/form-data
+```
+**Request Body:**
+```json
+{
+  "username": "string",
+  "email": "email",
+  "mobile_number": "string", 
+  "password": "string",
+  "password_confirm": "string",
+  "company_name": "string",
+  "kra_pin": "string",
+  "role_name": "string",
+  "national_id": "file (optional)",
+  "business_certificate": "file (optional)",
+  "kra_certificate": "file (optional)"
+}
+```
+
+#### Login User
+```http
+POST /api/auth/login/
+Content-Type: application/json
+```
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+**Response:**
+```json
+{
+  "token": "auth_token_here",
+  "user": {
+    "id": 1,
+    "username": "user",
+    "email": "user@example.com"
+  },
+  "user_type": "supplier"
+}
+```
+
+#### Logout User
+```http
+POST /api/auth/logout/
+Authorization: Token <token>
+```
+
+---
+
+### 👥 User Management
+
+#### List Users
+```http
+GET /api/users/
+Authorization: Token <token>
+```
+
+#### Get User Details
+```http
+GET /api/users/{id}/
+Authorization: Token <token>
+```
+
+#### Update User
+```http
+PUT /api/users/{id}/
+Authorization: Token <token>
+Content-Type: application/json
+```
+
+---
+
+### 🎭 Role Management
+
+#### List Active Roles
+```http
+GET /api/roles/active/
+```
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "supplier",
+    "description": "Invoice supplier role"
+  },
+  {
+    "id": 2, 
+    "name": "buyer",
+    "description": "Invoice buyer role"
+  }
+]
+```
+
+#### Get All Roles
+```http
+GET /api/roles/
+Authorization: Token <token>
+```
+
+---
+
+### 📄 Invoice Management
+
+#### List Invoices
+```http
+GET /api/invoices/
+Authorization: Token <token>
+```
+**Query Parameters:**
+- `status`: Filter by invoice status
+- `search`: Search by invoice number or buyer company name
+
+#### Create Invoice
+```http
+POST /api/invoices/
+Authorization: Token <token>
+Content-Type: multipart/form-data
+```
+**Request Body:**
+```json
+{
+  "invoice_number": "INV-001",
+  "patientName": "John Doe",
+  "insurerName": "Insurance Co",
+  "amount": "1000.00",
+  "due_date": "2024-12-31",
+  "serviceDescription": "Medical services",
+  "invoice_document": "file"
+}
+```
+
+#### Get Invoice Details
+```http
+GET /api/invoices/{id}/
+Authorization: Token <token>
+```
+
+#### Update Invoice
+```http
+PATCH /api/invoices/{id}/
+Authorization: Token <token>
+Content-Type: application/json
+```
+
+---
+
+### 📋 Contract Management
+
+#### List Contracts
+```http
+GET /api/contracts/
+Authorization: Token <token>
+```
+
+#### Create Contract
+```http
+POST /api/contracts/
+Authorization: Token <token>
+Content-Type: application/json
+```
+
+#### Get Contract Details
+```http
+GET /api/contracts/{id}/
+Authorization: Token <token>
+```
+
+---
+
+### 💰 Payment Management
+
+#### List Payments
+```http
+GET /api/payments/
+Authorization: Token <token>
+```
+
+#### Create Payment
+```http
+POST /api/payments/
+Authorization: Token <token>
+Content-Type: application/json
+```
+
+#### Get Payment Details
+```http
+GET /api/payments/{id}/
+Authorization: Token <token>
+```
+
+---
+
+### 📋 KYC Document Management
+
+#### Upload KYC Document
+```http
+POST /api/kyc-documents/upload/
+Authorization: Token <token>
+Content-Type: multipart/form-data
+```
+**Request Body:**
+```json
+{
+  "document_type": "national_id",
+  "document_file": "file"
+}
+```
+
+#### Get KYC Status
+```http
+GET /api/kyc-documents/status/
+Authorization: Token <token>
+```
+**Response:**
+```json
+{
+  "kyc_status": "pending",
+  "documents": [
+    {
+      "document_type": "national_id",
+      "status": "approved"
+    }
+  ]
+}
+```
+
+#### List KYC Documents
+```http
+GET /api/kyc-documents/
+Authorization: Token <token>
+```
+
+---
+
+### 📊 Dashboard Endpoints
+
+#### Get Dashboard Statistics
+```http
+GET /api/dashboard/stats/
+Authorization: Token <token>
+```
+**Response:**
+```json
+{
+  "totalInvoices": 25,
+  "pendingInvoices": 5,
+  "fundedInvoices": 20,
+  "totalAmount": "50000.00",
+  "fundedAmount": "40000.00", 
+  "pendingAmount": "10000.00"
+}
+```
+
+#### Get Recent Invoices
+```http
+GET /api/dashboard/recent-invoices/
+Authorization: Token <token>
+```
+
+#### Get Funding History
+```http
+GET /api/dashboard/funding-history/
+Authorization: Token <token>
+```
+
+---
+
+### 💳 Credit & Funding
+
+#### Get Credit Profile
+```http
+GET /api/credit/profile/
+Authorization: Token <token>
+```
+**Response:**
+```json
+{
+  "credit_score": 750,
+  "credit_limit": "100000.00",
+  "available_credit": "75000.00",
+  "credit_history": []
+}
+```
+
+#### Request Funding
+```http
+POST /api/funding/request/
+Authorization: Token <token>
+Content-Type: application/json
+```
+**Request Body:**
+```json
+{
+  "invoiceId": 1,
+  "mpesaNumber": "254700000000",
+  "requestedAmount": "5000.00"
+}
+```
+
+---
+
+### 🔧 Admin Operations
+
+#### Get Pending Approvals
+```http
+GET /api/admin/approvals/
+Authorization: Token <token>
+```
+
+#### Approve Invoice
+```http
+POST /api/admin/invoices/{invoice_id}/approve/
+Authorization: Token <token>
+```
+
+#### Decline Invoice
+```http
+POST /api/admin/invoices/{invoice_id}/decline/
+Authorization: Token <token>
+```
+
+---
+
+### 📈 Transaction Management
+
+#### List Transactions
+```http
+GET /api/transactions/
+Authorization: Token <token>
+```
+**Query Parameters:**
+- `type`: Filter by payment type
+
+---
+
+### 📁 File Upload
+
+#### Upload File
+```http
+POST /api/upload/
+Authorization: Token <token>
+Content-Type: multipart/form-data
+```
+**Request Body:**
+```json
+{
+  "file": "file"
+}
+```
+
+---
+
 ### 📁 Project Structure
 ```
 tokenized-invoice-ke/
