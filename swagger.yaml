@@ -1,0 +1,1409 @@
+openapi: 3.0.3
+info:
+  title: Invoice Discounting Platform API
+  description: |
+    API for the Tokenized Invoice Discounting Platform - A blockchain-enabled platform for invoice financing.
+    
+    ## Authentication
+    Most endpoints require authentication using Token-based authentication.
+    Include the token in the Authorization header: `Authorization: Token <your_token>`
+    
+    ## Base URLs
+    - Development: `http://localhost:8000/api/`
+    - Production: `https://tokenizedinvoicediscounting-production.up.railway.app/api/`
+  version: 1.0.0
+  contact:
+    name: Invoice Discounting Platform
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development server
+  - url: https://tokenizedinvoicediscounting-production.up.railway.app/api
+    description: Production server
+
+security:
+  - TokenAuth: []
+
+paths:
+  # Authentication Endpoints
+  /auth/register/:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user with KYC documents
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Registration failed - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login/:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout/:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully logged out"
+
+  # Role Management
+  /roles/:
+    get:
+      tags:
+        - Roles
+      summary: List all active roles
+      responses:
+        '200':
+          description: List of roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+    post:
+      tags:
+        - Roles
+      summary: Create new role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreate'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+
+  /roles/active/:
+    get:
+      tags:
+        - Roles
+      summary: Get active roles for registration (no auth required)
+      security: []
+      responses:
+        '200':
+          description: Active roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+  /roles/{id}/:
+    get:
+      tags:
+        - Roles
+      summary: Get role by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Role retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+    put:
+      tags:
+        - Roles
+      summary: Update role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreate'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+    delete:
+      tags:
+        - Roles
+      summary: Delete role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Role deleted successfully
+
+  # User Management
+  /users/:
+    get:
+      tags:
+        - Users
+      summary: List all users
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags:
+        - Users
+      summary: Create new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{id}/:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      tags:
+        - Users
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: User deleted successfully
+
+  # Contract Management
+  /contracts/:
+    get:
+      tags:
+        - Contracts
+      summary: List user's contracts
+      responses:
+        '200':
+          description: Contracts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contract'
+    post:
+      tags:
+        - Contracts
+      summary: Create new contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractCreate'
+      responses:
+        '201':
+          description: Contract created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+
+  /contracts/{id}/:
+    get:
+      tags:
+        - Contracts
+      summary: Get contract by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Contract retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+    put:
+      tags:
+        - Contracts
+      summary: Update contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractCreate'
+      responses:
+        '200':
+          description: Contract updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+    delete:
+      tags:
+        - Contracts
+      summary: Delete contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Contract deleted successfully
+
+  # Invoice Management
+  /invoices/:
+    get:
+      tags:
+        - Invoices
+      summary: List user's invoices with filtering
+      parameters:
+        - name: status
+          in: query
+          description: Filter by invoice status
+          schema:
+            type: string
+            enum: [pending, approved, funded, rejected, settled, completed, defaulted]
+        - name: search
+          in: query
+          description: Search by invoice number or company name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoices retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+    post:
+      tags:
+        - Invoices
+      summary: Upload new invoice
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceUpload'
+      responses:
+        '201':
+          description: Invoice uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+
+  /invoices/{id}/:
+    get:
+      tags:
+        - Invoices
+      summary: Get invoice by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Invoice retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+    put:
+      tags:
+        - Invoices
+      summary: Update invoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceUpdate'
+      responses:
+        '200':
+          description: Invoice updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+    delete:
+      tags:
+        - Invoices
+      summary: Delete invoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Invoice deleted successfully
+
+  # Payment Management
+  /payments/:
+    get:
+      tags:
+        - Payments
+      summary: List user's payments
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+    post:
+      tags:
+        - Payments
+      summary: Create new payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreate'
+      responses:
+        '201':
+          description: Payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /payments/{id}/:
+    get:
+      tags:
+        - Payments
+      summary: Get payment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  # KYC Document Management
+  /kyc-documents/:
+    get:
+      tags:
+        - KYC
+      summary: List user's KYC documents
+      responses:
+        '200':
+          description: KYC documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KYCDocument'
+
+  /kyc-documents/upload/:
+    post:
+      tags:
+        - KYC
+      summary: Upload KYC document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KYCUpload'
+      responses:
+        '201':
+          description: KYC document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDocument'
+
+  /kyc-documents/status/:
+    get:
+      tags:
+        - KYC
+      summary: Get KYC verification status
+      responses:
+        '200':
+          description: KYC status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCStatus'
+
+  # Dashboard & Analytics
+  /dashboard/stats/:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard statistics
+      responses:
+        '200':
+          description: Dashboard stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+
+  /dashboard/recent-invoices/:
+    get:
+      tags:
+        - Dashboard
+      summary: Get 5 most recent invoices
+      responses:
+        '200':
+          description: Recent invoices retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+                maxItems: 5
+
+  /dashboard/funding-history/:
+    get:
+      tags:
+        - Dashboard
+      summary: Get 10 most recent payments
+      responses:
+        '200':
+          description: Funding history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+                maxItems: 10
+
+  # Credit Profile
+  /credit/profile/:
+    get:
+      tags:
+        - Credit
+      summary: Get user's credit profile
+      responses:
+        '200':
+          description: Credit profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditProfile'
+
+  # Funding Operations
+  /funding/request/:
+    post:
+      tags:
+        - Funding
+      summary: Request funding for invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FundingRequest'
+      responses:
+        '200':
+          description: Funding request processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FundingResponse'
+
+  # Admin Operations
+  /admin/approvals/:
+    get:
+      tags:
+        - Admin
+      summary: Get pending approvals
+      responses:
+        '200':
+          description: Pending approvals retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+
+  /admin/invoices/{invoice_id}/approve/:
+    post:
+      tags:
+        - Admin
+      summary: Approve invoice
+      parameters:
+        - name: invoice_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Invoice approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+
+  /admin/invoices/{invoice_id}/decline/:
+    post:
+      tags:
+        - Admin
+      summary: Decline invoice
+      parameters:
+        - name: invoice_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Invoice declined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+
+  # Transactions
+  /transactions/:
+    get:
+      tags:
+        - Transactions
+      summary: Get user's transactions
+      parameters:
+        - name: type
+          in: query
+          description: Filter by transaction type
+          schema:
+            type: string
+            enum: [advance, settlement, retention_release, fee]
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+
+  # File Upload
+  /upload/:
+    post:
+      tags:
+        - Files
+      summary: Generic file upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: URL of uploaded file
+
+components:
+  securitySchemes:
+    TokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token authentication. Use format "Token <your_token>"
+
+  schemas:
+    # User Related Schemas
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - mobile_number
+        - password
+        - password_confirm
+        - role_name
+      properties:
+        username:
+          type: string
+          maxLength: 15
+          description: Optional username
+        email:
+          type: string
+          format: email
+          description: Unique email address
+        mobile_number:
+          type: string
+          maxLength: 15
+          description: User's mobile number
+        password:
+          type: string
+          format: password
+          description: Password (will be validated)
+        password_confirm:
+          type: string
+          format: password
+          description: Password confirmation (must match password)
+        company_name:
+          type: string
+          maxLength: 255
+          description: Company name (optional)
+        kra_pin:
+          type: string
+          maxLength: 20
+          description: KRA PIN number (optional)
+        role_name:
+          type: string
+          description: Role name (must exist in active roles)
+        national_id:
+          type: string
+          format: binary
+          description: National ID document (optional)
+        business_certificate:
+          type: string
+          format: binary
+          description: Business certificate document (optional)
+        kra_certificate:
+          type: string
+          format: binary
+          description: KRA certificate document (optional)
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Authentication token
+        user:
+          $ref: '#/components/schemas/User'
+
+    UserResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          maxLength: 15
+        email:
+          type: string
+          format: email
+        mobile_number:
+          type: string
+          maxLength: 15
+        company_name:
+          type: string
+          maxLength: 255
+        kra_pin:
+          type: string
+          maxLength: 20
+        role:
+          $ref: '#/components/schemas/Role'
+        created_on:
+          type: string
+          format: date
+          readOnly: true
+        is_active:
+          type: boolean
+          default: true
+
+    UserCreate:
+      type: object
+      required:
+        - email
+        - mobile_number
+        - password
+      properties:
+        username:
+          type: string
+          maxLength: 15
+        email:
+          type: string
+          format: email
+        mobile_number:
+          type: string
+          maxLength: 15
+        password:
+          type: string
+          format: password
+        company_name:
+          type: string
+          maxLength: 255
+        kra_pin:
+          type: string
+          maxLength: 20
+        role:
+          type: integer
+          description: Role ID
+
+    # Role Schemas
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        short_name:
+          type: string
+          enum: [financier, supplier, buyer]
+        description:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+          default: true
+
+    RoleCreate:
+      type: object
+      required:
+        - name
+        - short_name
+        - description
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        short_name:
+          type: string
+          enum: [financier, supplier, buyer]
+        description:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+          default: true
+
+    # Contract Schemas
+    Contract:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        buyer:
+          $ref: '#/components/schemas/User'
+        supplier:
+          $ref: '#/components/schemas/User'
+        contract_reference:
+          type: string
+          maxLength: 50
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, expired, terminated]
+          default: active
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ContractCreate:
+      type: object
+      required:
+        - buyer
+        - supplier
+        - contract_reference
+        - amount
+        - date_from
+        - date_to
+      properties:
+        buyer:
+          type: integer
+          description: Buyer user ID
+        supplier:
+          type: integer
+          description: Supplier user ID
+        contract_reference:
+          type: string
+          maxLength: 50
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, expired, terminated]
+          default: active
+
+    # Invoice Schemas
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        contract:
+          $ref: '#/components/schemas/Contract'
+        supplier:
+          $ref: '#/components/schemas/User'
+        buyer:
+          $ref: '#/components/schemas/User'
+        financier:
+          $ref: '#/components/schemas/User'
+        invoice_number:
+          type: string
+          maxLength: 50
+        invoice_amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        discount_rate:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          nullable: true
+        advance_rate:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          default: 85.00
+        advance_amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          nullable: true
+        retention_amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, funded, rejected, settled, completed, defaulted]
+          default: pending
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        funded_at:
+          type: string
+          format: date-time
+          nullable: true
+        settled_at:
+          type: string
+          format: date-time
+          nullable: true
+        invoice_document:
+          type: string
+          format: uri
+          nullable: true
+
+    InvoiceUpload:
+      type: object
+      required:
+        - invoice_number
+        - patientName
+        - insurerName
+        - amount
+        - due_date
+      properties:
+        invoice_number:
+          type: string
+          maxLength: 50
+        patientName:
+          type: string
+          description: Patient name (for frontend compatibility)
+        insurerName:
+          type: string
+          description: Insurer name (for frontend compatibility)
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          description: Maps to invoice_amount
+        due_date:
+          type: string
+          format: date
+        serviceDescription:
+          type: string
+          description: Optional service description
+        invoice_document:
+          type: string
+          format: binary
+          description: Invoice document file
+
+    InvoiceUpdate:
+      type: object
+      properties:
+        invoice_number:
+          type: string
+          maxLength: 50
+        invoice_amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        discount_rate:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          nullable: true
+
+    # Payment Schemas
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice:
+          $ref: '#/components/schemas/Invoice'
+        payer:
+          $ref: '#/components/schemas/User'
+        payee:
+          $ref: '#/components/schemas/User'
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        payment_type:
+          type: string
+          enum: [advance, settlement, retention_release, fee]
+        mpesa_transaction_id:
+          type: string
+          maxLength: 50
+          nullable: true
+        mpesa_receipt_number:
+          type: string
+          maxLength: 50
+          nullable: true
+        blockchain_tx_hash:
+          type: string
+          maxLength: 100
+          nullable: true
+        wallet_address:
+          type: string
+          maxLength: 100
+          nullable: true
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          default: pending
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    PaymentCreate:
+      type: object
+      required:
+        - invoice
+        - payer
+        - payee
+        - amount
+        - payment_type
+      properties:
+        invoice:
+          type: integer
+          description: Invoice ID
+        payer:
+          type: integer
+          description: Payer user ID
+        payee:
+          type: integer
+          description: Payee user ID
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        payment_type:
+          type: string
+          enum: [advance, settlement, retention_release, fee]
+
+    # KYC Schemas
+    KYCDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/User'
+        document_type:
+          type: string
+          enum: [national_id, business_certificate, kra_certificate]
+        document_file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        verified:
+          type: boolean
+          default: false
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    KYCUpload:
+      type: object
+      required:
+        - document_type
+        - document_file
+      properties:
+        document_type:
+          type: string
+          enum: [national_id, business_certificate, kra_certificate]
+        document_file:
+          type: string
+          format: binary
+
+    KYCStatus:
+      type: object
+      properties:
+        verification_status:
+          type: string
+          enum: [pending, verified, rejected]
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/KYCDocument'
+
+    # Dashboard & Analytics Schemas
+    DashboardStats:
+      type: object
+      properties:
+        totalInvoices:
+          type: integer
+        pendingInvoices:
+          type: integer
+        fundedInvoices:
+          type: integer
+        totalAmount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        fundedAmount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        pendingAmount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+
+    # Credit Profile Schema
+    CreditProfile:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 650
+          maximum: 850
+        maxScore:
+          type: integer
+          default: 900
+        creditLimit:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        usedCredit:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+        factors:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              score:
+                type: integer
+              impact:
+                type: string
+                enum: [positive, negative, neutral]
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              score:
+                type: integer
+
+    # Funding Schema
+    FundingRequest:
+      type: object
+      required:
+        - invoiceId
+        - mpesaNumber
+        - requestedAmount
+      properties:
+        invoiceId:
+          type: integer
+        mpesaNumber:
+          type: string
+          maxLength: 15
+        requestedAmount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+
+    FundingResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+        invoice:
+          $ref: '#/components/schemas/Invoice'
+
+    # Error Schema
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties: true
+
+tags:
+  - name: Authentication
+    description: User authentication and registration
+  - name: Users
+    description: User management operations
+  - name: Roles
+    description: Role management operations
+  - name: Contracts
+    description: Contract management operations
+  - name: Invoices
+    description: Invoice management operations
+  - name: Payments
+    description: Payment and transaction operations
+  - name: KYC
+    description: Know Your Customer document management
+  - name: Dashboard
+    description: Dashboard and analytics data
+  - name: Credit
+    description: Credit profile and scoring
+  - name: Funding
+    description: Funding request operations
+  - name: Admin
+    description: Administrative operations
+  - name: Transactions
+    description: Transaction history and management
+  - name: Files
+    description: File upload operations
