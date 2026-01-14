@@ -1,0 +1,2299 @@
+openapi: 3.0.3
+info:
+  title: Invoice Discounting Platform API
+  version: 1.0.0
+  description: "\n    API for the Tokenized Invoice Discounting Platform - A blockchain-enabled\
+    \ platform for invoice financing.\n\n    ## Key Features\n\n    ### \U0001F916\
+    \ OCR Invoice Extraction\n    Automatically extract invoice data from eTIMS invoices\
+    \ using OCR technology:\n    - Upload PDF or image files (JPG, PNG)\n    - Extract\
+    \ invoice numbers, amounts, dates, and KRA PINs\n    - Get confidence scores for\
+    \ extracted fields\n    - Support for Kenya Revenue Authority eTIMS format\n\n\
+    \    ### \U0001F4B0 Invoice Management\n    - Submit invoices for discounting\n\
+    \    - Track invoice status (pending, approved, funded, settled)\n    - Real-time\
+    \ funding requests\n    - Payment tracking with M-Pesa integration\n\n    ###\
+    \ \U0001F465 User Management\n    - Multi-role support (Supplier, Buyer, Financier)\n\
+    \    - KYC document verification\n    - JWT authentication\n\n    ### \U0001F4CA\
+    \ Dashboard & Analytics\n    - Real-time statistics\n    - Funding history\n \
+    \   - Credit profile tracking\n\n    ## Authentication\n    Most endpoints require\
+    \ JWT authentication. Include the access token in the Authorization header:\n\
+    \    ```\n    Authorization: Bearer <your_access_token>\n    ```\n\n    ## OCR\
+    \ Workflow\n    1. **Extract data:** POST to `/api/invoices/extract/` with invoice\
+    \ file\n    2. **Review:** Frontend displays extracted data with confidence scores\n\
+    \    3. **Create:** POST to `/api/invoices/` with confirmed data\n\n    Or use\
+    \ the one-step approach:\n    - POST directly to `/api/invoices/` with invoice\
+    \ file - OCR runs automatically!\n    "
+paths:
+  /api/admin/approvals/:
+    get:
+      operationId: admin_approvals_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/admin/invoices/{invoice_id}/approve/:
+    post:
+      operationId: admin_invoices_approve_create
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/admin/invoices/{invoice_id}/decline/:
+    post:
+      operationId: admin_invoices_decline_create
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/contracts/:
+    get:
+      operationId: contracts_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - contracts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedContractList'
+          description: ''
+    post:
+      operationId: contracts_create
+      tags:
+      - contracts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContractRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContractRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+  /api/contracts/{id}/:
+    get:
+      operationId: contracts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - contracts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+    put:
+      operationId: contracts_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - contracts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContractRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContractRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+    patch:
+      operationId: contracts_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - contracts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedContractRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedContractRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedContractRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+    delete:
+      operationId: contracts_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - contracts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/credit/profile/:
+    get:
+      operationId: credit_profile_retrieve
+      tags:
+      - credit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/dashboard/funding-history/:
+    get:
+      operationId: dashboard_funding_history_retrieve
+      tags:
+      - dashboard
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/dashboard/recent-invoices/:
+    get:
+      operationId: dashboard_recent_invoices_retrieve
+      tags:
+      - dashboard
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/dashboard/stats/:
+    get:
+      operationId: dashboard_stats_retrieve
+      tags:
+      - dashboard
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/funding/request/:
+    post:
+      operationId: funding_request_create
+      tags:
+      - funding
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/invoices/:
+    get:
+      operationId: invoices_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvoiceList'
+          description: ''
+    post:
+      operationId: invoice_create
+      description: "\n        Create a new invoice. Supports automatic OCR data extraction\
+        \ from uploaded invoice documents.\n\n        **Two modes of operation:**\n\
+        \n        **1. Manual Entry:**\n        Provide all invoice fields manually:\n\
+        \        - invoice_number (required)\n        - amount (required)\n      \
+        \  - due_date (required)\n        - patientName (optional)\n        - insurerName\
+        \ (optional)\n        - invoice_document (optional - PDF/image file)\n\n \
+        \       **2. Automatic OCR Extraction (Recommended):**\n        Upload invoice_document\
+        \ and optionally provide fields. OCR will extract missing fields:\n      \
+        \  - If invoice_document is provided, OCR extraction runs automatically\n\
+        \        - OCR-extracted data is used for any fields not provided by user\n\
+        \        - User-provided data always takes priority over OCR data\n\n    \
+        \    **Supported file formats:** PDF, JPG, JPEG, PNG (max 10MB)\n\n      \
+        \  **Example workflow:**\n        ```\n        POST /api/invoices/\n     \
+        \   Content-Type: multipart/form-data\n\n        {\n          \"invoice_document\"\
+        : <file>,  // OCR extracts all fields\n          \"invoice_number\": \"\"\
+        ,         // Optional override\n          \"amount\": \"\"               \
+        \   // Optional override\n        }\n        ```\n\n        The invoice is\
+        \ created and saved to the database immediately.\n        "
+      summary: Create invoice with automatic OCR extraction
+      tags:
+      - Invoices
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceUploadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Validation error
+                type: object
+              examples:
+                ValidationError:
+                  value:
+                    invoice_number:
+                    - This field is required.
+                    amount:
+                    - This field is required.
+                  summary: Validation error
+          description: ''
+  /api/invoices/{id}/:
+    get:
+      operationId: invoices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    put:
+      operationId: invoices_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    patch:
+      operationId: invoices_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoiceRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    delete:
+      operationId: invoices_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/invoices/extract/:
+    post:
+      operationId: invoice_ocr_extract
+      description: "\n        Upload an eTIMS invoice (PDF or image) to automatically\
+        \ extract invoice fields using OCR.\n\n        **Supported formats:** PDF,\
+        \ JPG, JPEG, PNG\n        **Max file size:** 10MB\n        **Extracted fields:**\n\
+        \        - Invoice number (SCU ID)\n        - Invoice amount (Total Amount)\n\
+        \        - Invoice date (Date Created)\n        - Due date (if available)\n\
+        \        - Supplier KRA PIN\n        - Buyer KRA PIN\n        - Seller name\n\
+        \        - Buyer name\n\n        The response includes:\n        - Extracted\
+        \ field values\n        - Confidence scores for each field (0.0 to 1.0)\n\
+        \        - Success status\n        - Any extraction errors\n\n        **Typical\
+        \ workflow:**\n        1. Upload invoice file to this endpoint\n        2.\
+        \ Review extracted data and confidence scores\n        3. Edit/confirm data\
+        \ in frontend\n        4. POST to `/api/invoices/` to create invoice\n   \
+        \     "
+      summary: Extract invoice data using OCR
+      tags:
+      - Invoice OCR
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceOCRRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceOCRRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceOCRResponse'
+              examples:
+                SuccessfulOCRExtraction:
+                  value:
+                    invoice_number: KRASRN000314580
+                    invoice_amount: '60000.00'
+                    invoice_date: '2025-12-17'
+                    due_date: null
+                    supplier_kra_pin: A014019184W
+                    buyer_kra_pin: P0052006107N
+                    seller_details:
+                      name: DENNIS MUASYA WAMBUA
+                    buyer_details:
+                      name: BEVTECH SOLUTIONS LIMITED
+                    confidence_scores:
+                      invoice_number: 0.9
+                      invoice_amount: 0.95
+                      invoice_date: 0.9
+                      supplier_kra_pin: 0.95
+                      buyer_kra_pin: 0.5
+                    extraction_success: true
+                    extraction_errors: []
+                  summary: Successful OCR extraction
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Invalid file upload
+                type: object
+              examples:
+                InvalidFileUpload:
+                  value:
+                    invoice_document:
+                    - 'Unsupported file format. Supported formats: pdf, jpg, jpeg,
+                      png'
+                  summary: Invalid file upload
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                description: OCR extraction failed
+                type: object
+              examples:
+                OCRExtractionFailed:
+                  value:
+                    error: OCR extraction failed
+                    details:
+                    - No text could be extracted from the image
+                  summary: OCR extraction failed
+          description: ''
+  /api/kyc-documents/:
+    get:
+      operationId: kyc_documents_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - kyc-documents
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKYCDocumentList'
+          description: ''
+    post:
+      operationId: kyc_documents_create
+      tags:
+      - kyc-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentUploadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentUploadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDocumentUpload'
+          description: ''
+  /api/kyc-documents/{id}/:
+    get:
+      operationId: kyc_documents_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - kyc-documents
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDocument'
+          description: ''
+    put:
+      operationId: kyc_documents_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - kyc-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDocument'
+          description: ''
+    patch:
+      operationId: kyc_documents_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - kyc-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKYCDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKYCDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKYCDocumentRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDocument'
+          description: ''
+    delete:
+      operationId: kyc_documents_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - kyc-documents
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/kyc-documents/status/:
+    get:
+      operationId: kyc_documents_status_retrieve
+      tags:
+      - kyc-documents
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDocument'
+          description: ''
+  /api/kyc-documents/upload/:
+    post:
+      operationId: kyc_documents_upload_create
+      tags:
+      - kyc-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KYCDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDocument'
+          description: ''
+  /api/payments/:
+    get:
+      operationId: payments_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentList'
+          description: ''
+    post:
+      operationId: payments_create
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+  /api/payments/{id}/:
+    get:
+      operationId: payments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    put:
+      operationId: payments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    patch:
+      operationId: payments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    delete:
+      operationId: payments_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/roles/:
+    get:
+      operationId: roles_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - roles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoleList'
+          description: ''
+    post:
+      operationId: roles_create
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleCreate'
+          description: ''
+  /api/roles/{id}/:
+    get:
+      operationId: roles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - roles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    put:
+      operationId: roles_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    patch:
+      operationId: roles_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    delete:
+      operationId: roles_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - roles
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/roles/active/:
+    get:
+      operationId: roles_active_retrieve
+      description: Get only active roles for user registration
+      tags:
+      - roles
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /api/transactions/:
+    get:
+      operationId: transactions_retrieve
+      tags:
+      - transactions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/upload/:
+    post:
+      operationId: upload_create
+      tags:
+      - upload
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/users/:
+    get:
+      operationId: users_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: users_create
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/{id}/:
+    get:
+      operationId: users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Contract:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        buyer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        supplier:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        contract_reference:
+          type: string
+          maxLength: 50
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/ContractStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - buyer
+      - contract_reference
+      - created_at
+      - date_from
+      - date_to
+      - id
+      - supplier
+    ContractRequest:
+      type: object
+      properties:
+        contract_reference:
+          type: string
+          minLength: 1
+          maxLength: 50
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/ContractStatusEnum'
+      required:
+      - amount
+      - contract_reference
+      - date_from
+      - date_to
+    ContractStatusEnum:
+      enum:
+      - active
+      - expired
+      - terminated
+      type: string
+      description: |-
+        * `active` - Active
+        * `expired` - Expired
+        * `terminated` - Terminated
+    DocumentTypeEnum:
+      enum:
+      - national_id
+      - business_certificate
+      - kra_certificate
+      type: string
+      description: |-
+        * `national_id` - National ID
+        * `business_certificate` - Business Certificate
+        * `kra_certificate` - KRA Certificate
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        contract:
+          allOf:
+          - $ref: '#/components/schemas/Contract'
+          readOnly: true
+        supplier:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        buyer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        financier:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        patientName:
+          type: string
+          readOnly: true
+        insurerName:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        uploadDate:
+          type: string
+          format: date-time
+          readOnly: true
+        serviceDescription:
+          type: string
+          readOnly: true
+          default: Medical services
+        discountRate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        fundedAmount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        invoice_number:
+          type: string
+          maxLength: 50
+        invoice_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        discount_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        advance_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        advance_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        retention_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          $ref: '#/components/schemas/InvoiceStatusEnum'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        funded_at:
+          type: string
+          format: date-time
+          nullable: true
+        settled_at:
+          type: string
+          format: date-time
+          nullable: true
+        invoice_document:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - amount
+      - buyer
+      - contract
+      - discountRate
+      - due_date
+      - financier
+      - fundedAmount
+      - id
+      - insurerName
+      - invoice_amount
+      - invoice_date
+      - invoice_number
+      - patientName
+      - serviceDescription
+      - submitted_at
+      - supplier
+      - uploadDate
+    InvoiceOCRRequestRequest:
+      type: object
+      description: Validates file upload for OCR extraction.
+      properties:
+        invoice_document:
+          type: string
+          format: binary
+      required:
+      - invoice_document
+    InvoiceOCRResponse:
+      type: object
+      description: Returns extracted invoice data from OCR.
+      properties:
+        invoice_number:
+          type: string
+          nullable: true
+        invoice_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        invoice_date:
+          type: string
+          format: date
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        supplier_kra_pin:
+          type: string
+          nullable: true
+        buyer_kra_pin:
+          type: string
+          nullable: true
+        buyer_details:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        seller_details:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        confidence_scores:
+          type: object
+          additionalProperties: {}
+        extraction_success:
+          type: boolean
+          default: false
+        extraction_errors:
+          type: array
+          items:
+            type: string
+        raw_text:
+          type: string
+    InvoiceRequest:
+      type: object
+      properties:
+        invoice_number:
+          type: string
+          minLength: 1
+          maxLength: 50
+        invoice_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        discount_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        advance_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        advance_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        retention_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          $ref: '#/components/schemas/InvoiceStatusEnum'
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        funded_at:
+          type: string
+          format: date-time
+          nullable: true
+        settled_at:
+          type: string
+          format: date-time
+          nullable: true
+        invoice_document:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - due_date
+      - invoice_amount
+      - invoice_date
+      - invoice_number
+    InvoiceStatusEnum:
+      enum:
+      - pending
+      - approved
+      - funded
+      - settled
+      - completed
+      - rejected
+      - defaulted
+      type: string
+      description: |-
+        * `pending` - Pending Approval
+        * `approved` - Approved
+        * `funded` - Funded
+        * `settled` - Settled
+        * `completed` - Completed
+        * `rejected` - Rejected
+        * `defaulted` - Defaulted
+    InvoiceUploadRequest:
+      type: object
+      properties:
+        invoice_number:
+          type: string
+          minLength: 1
+          maxLength: 50
+        patientName:
+          type: string
+          writeOnly: true
+        insurerName:
+          type: string
+          writeOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        serviceDescription:
+          type: string
+          writeOnly: true
+          minLength: 1
+          default: Medical services
+        invoice_document:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - due_date
+      - invoice_date
+      - invoice_number
+    KYCDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        document_file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        verified:
+          type: boolean
+          readOnly: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - document_file
+      - document_type
+      - id
+      - uploaded_at
+      - verified
+      - verified_at
+    KYCDocumentRequest:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        document_file:
+          type: string
+          format: binary
+      required:
+      - document_file
+      - document_type
+    KYCDocumentUpload:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        document_file:
+          type: string
+          format: uri
+      required:
+      - document_file
+      - document_type
+    KYCDocumentUploadRequest:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        document_file:
+          type: string
+          format: binary
+      required:
+      - document_file
+      - document_type
+    PaginatedContractList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contract'
+    PaginatedInvoiceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+    PaginatedKYCDocumentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KYCDocument'
+    PaginatedPaymentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+    PaginatedRoleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedContractRequest:
+      type: object
+      properties:
+        contract_reference:
+          type: string
+          minLength: 1
+          maxLength: 50
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/ContractStatusEnum'
+    PatchedInvoiceRequest:
+      type: object
+      properties:
+        invoice_number:
+          type: string
+          minLength: 1
+          maxLength: 50
+        invoice_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        discount_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        advance_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        advance_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        retention_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          $ref: '#/components/schemas/InvoiceStatusEnum'
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        funded_at:
+          type: string
+          format: date-time
+          nullable: true
+        settled_at:
+          type: string
+          format: date-time
+          nullable: true
+        invoice_document:
+          type: string
+          format: binary
+          nullable: true
+    PatchedKYCDocumentRequest:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        document_file:
+          type: string
+          format: binary
+    PatchedPaymentRequest:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        payment_type:
+          $ref: '#/components/schemas/PaymentTypeEnum'
+        mpesa_transaction_id:
+          type: string
+          nullable: true
+          maxLength: 50
+        mpesa_receipt_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        blockchain_tx_hash:
+          type: string
+          nullable: true
+          maxLength: 100
+        wallet_address:
+          type: string
+          nullable: true
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        invoice:
+          type: integer
+    PatchedRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        short_name:
+          $ref: '#/components/schemas/ShortNameEnum'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 255
+        is_active:
+          type: boolean
+    PatchedUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 15
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        mobile_number:
+          type: string
+          minLength: 1
+          maxLength: 15
+        is_active:
+          type: boolean
+        company_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        kra_pin:
+          type: string
+          nullable: true
+          maxLength: 20
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        payer:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        payee:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        type:
+          type: string
+          readOnly: true
+        date:
+          type: string
+          format: date-time
+          readOnly: true
+        mpesaRef:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        payment_type:
+          $ref: '#/components/schemas/PaymentTypeEnum'
+        mpesa_transaction_id:
+          type: string
+          nullable: true
+          maxLength: 50
+        mpesa_receipt_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        blockchain_tx_hash:
+          type: string
+          nullable: true
+          maxLength: 100
+        wallet_address:
+          type: string
+          nullable: true
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        invoice:
+          type: integer
+      required:
+      - amount
+      - created_at
+      - date
+      - description
+      - id
+      - invoice
+      - mpesaRef
+      - payee
+      - payer
+      - payment_type
+      - type
+    PaymentRequest:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        payment_type:
+          $ref: '#/components/schemas/PaymentTypeEnum'
+        mpesa_transaction_id:
+          type: string
+          nullable: true
+          maxLength: 50
+        mpesa_receipt_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        blockchain_tx_hash:
+          type: string
+          nullable: true
+          maxLength: 100
+        wallet_address:
+          type: string
+          nullable: true
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        invoice:
+          type: integer
+      required:
+      - amount
+      - invoice
+      - payment_type
+    PaymentStatusEnum:
+      enum:
+      - pending
+      - processing
+      - completed
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `completed` - Completed
+        * `failed` - Failed
+    PaymentTypeEnum:
+      enum:
+      - advance
+      - settlement
+      - retention_release
+      - fee
+      type: string
+      description: |-
+        * `advance` - Advance to Supplier
+        * `settlement` - Buyer Settlement
+        * `retention_release` - Retention Release
+        * `fee` - Platform Fee
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        short_name:
+          $ref: '#/components/schemas/ShortNameEnum'
+        description:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+      required:
+      - description
+      - id
+      - name
+    RoleCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        short_name:
+          $ref: '#/components/schemas/ShortNameEnum'
+        description:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+      required:
+      - description
+      - name
+    RoleCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        short_name:
+          $ref: '#/components/schemas/ShortNameEnum'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 255
+        is_active:
+          type: boolean
+      required:
+      - description
+      - name
+    RoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        short_name:
+          $ref: '#/components/schemas/ShortNameEnum'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 255
+        is_active:
+          type: boolean
+      required:
+      - description
+      - name
+    ShortNameEnum:
+      enum:
+      - financier
+      - supplier
+      - buyer
+      type: string
+      description: |-
+        * `financier` - Financier
+        * `supplier` - Supplier
+        * `buyer` - Buyer
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          maxLength: 15
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        mobile_number:
+          type: string
+          maxLength: 15
+        created_on:
+          type: string
+          format: date
+          readOnly: true
+        is_active:
+          type: boolean
+        role:
+          allOf:
+          - $ref: '#/components/schemas/Role'
+          readOnly: true
+        role_name:
+          type: string
+          readOnly: true
+        company_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        kra_pin:
+          type: string
+          nullable: true
+          maxLength: 20
+      required:
+      - created_on
+      - email
+      - id
+      - mobile_number
+      - role
+      - role_name
+    UserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 15
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        mobile_number:
+          type: string
+          minLength: 1
+          maxLength: 15
+        is_active:
+          type: boolean
+        company_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        kra_pin:
+          type: string
+          nullable: true
+          maxLength: 20
+      required:
+      - email
+      - mobile_number
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Invoice OCR
+  description: OCR-powered invoice data extraction from eTIMS documents
+- name: Invoices
+  description: Invoice management and discounting operations
+- name: Authentication
+  description: User authentication and JWT token management
+- name: Users
+  description: User profile and management
+- name: KYC
+  description: KYC document upload and verification
+- name: Contracts
+  description: Buyer-Supplier contract management
+- name: Payments
+  description: Payment tracking and M-Pesa integration
+- name: Dashboard
+  description: Dashboard statistics and analytics

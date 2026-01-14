@@ -1,5 +1,7 @@
 from django.urls import path, include
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 router = DefaultRouter()
@@ -13,11 +15,15 @@ router.register(r'kyc-documents', views.KYCDocumentViewSet, basename='kyc-docume
 urlpatterns = [
     # API Router URLs
     path('api/', include(router.urls)),
-    
+
+    # OCR Extraction endpoint
+    path('api/invoices/extract/', csrf_exempt(views.InvoiceOCRView.as_view()), name='invoice-ocr-extract'),
+
     # Authentication endpoints
-    path('api/auth/login/', views.LoginView.as_view(), name='login'),
-    path('api/auth/register/', views.RegisterView.as_view(), name='register'),
-    path('api/auth/logout/', views.LogoutView.as_view(), name='logout'),
+    path('api/auth/login/', csrf_exempt(views.LoginView.as_view()), name='login'),
+    path('api/auth/register/', csrf_exempt(views.RegisterView.as_view()), name='register'),
+    path('api/auth/logout/', csrf_exempt(views.LogoutView.as_view()), name='logout'),
+    path('api/auth/token/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='token_refresh'),
     
     # Dashboard endpoints
     path('api/dashboard/stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),

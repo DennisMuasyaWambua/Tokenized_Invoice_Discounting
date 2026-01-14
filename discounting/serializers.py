@@ -144,15 +144,15 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class InvoiceUploadSerializer(serializers.ModelSerializer):
-    patientName = serializers.CharField(write_only=True)
-    insurerName = serializers.CharField(write_only=True)
-    amount = serializers.DecimalField(source='invoice_amount', max_digits=15, decimal_places=2)
-    serviceDescription = serializers.CharField(default='Medical services', write_only=True)
-    
+    patientName = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    insurerName = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    amount = serializers.DecimalField(source='invoice_amount', max_digits=15, decimal_places=2, required=False)
+    serviceDescription = serializers.CharField(default='Medical services', write_only=True, required=False)
+
     class Meta:
         model = Invoice
-        fields = ['invoice_number', 'patientName', 'insurerName', 'amount', 
-                 'due_date', 'serviceDescription', 'invoice_document']
+        fields = ['invoice_number', 'patientName', 'insurerName', 'amount',
+                 'invoice_date', 'due_date', 'serviceDescription', 'invoice_document']
     
     def create(self, validated_data):
         request = self.context['request']
@@ -222,11 +222,11 @@ class KYCDocumentUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = KYCDocument
         fields = ['document_type', 'document_file']
-    
+
     def create(self, validated_data):
         user = self.context['request'].user
         document_type = validated_data['document_type']
-        
+
         # Update existing document or create new one
         kyc_doc, _ = KYCDocument.objects.update_or_create(
             user=user,
@@ -234,3 +234,43 @@ class KYCDocumentUploadSerializer(serializers.ModelSerializer):
             defaults={'document_file': validated_data['document_file']}
         )
         return kyc_doc
+
+
+class InvoiceOCRRequestSerializer(serializers.Serializer):
+    """Validates file upload for OCR extraction."""
+    invoice_document = serializers.FileField(required=True)
+
+    def validate_invoice_document(self, value):
+        """Validate invoice file using InvoiceFileValidator."""
+        from .validators import InvoiceFileValidator
+
+        validator = InvoiceFileValidator()
+        validator.validate(value)
+        return value
+
+
+class InvoiceOCRResponseSerializer(serializers.Serializer):
+    """Returns extracted invoice data from OCR."""
+    invoice_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    invoice_amount = serializers.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        required=False,
+        allow_null=True
+    )
+    invoice_date = serializers.DateField(required=False, allow_null=True)
+    due_date = serializers.DateField(required=False, allow_null=True)
+    supplier_kra_pin = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    buyer_kra_pin = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    buyer_details = serializers.DictField(required=False, allow_null=True)
+    seller_details = serializers.DictField(required=False, allow_null=True)
+
+    # Metadata fields
+    confidence_scores = serializers.DictField(required=False)
+    extraction_success = serializers.BooleanField(default=False)
+    extraction_errors = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True
+    )
+    raw_text = serializers.CharField(required=False, allow_blank=True)
