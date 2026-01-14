@@ -604,7 +604,6 @@ class KYCDocumentViewSet(viewsets.ModelViewSet):
         return Response(status_data)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class InvoiceOCRView(APIView):
     """
     OCR Invoice Data Extraction Endpoint

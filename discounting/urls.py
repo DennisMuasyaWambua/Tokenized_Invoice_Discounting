@@ -13,11 +13,11 @@ router.register(r'roles', views.RoleViewSet)
 router.register(r'kyc-documents', views.KYCDocumentViewSet, basename='kyc-documents')
 
 urlpatterns = [
+    # OCR Extraction endpoint (must come before router to avoid conflicts)
+    path('api/invoices/extract/', csrf_exempt(views.InvoiceOCRView.as_view()), name='invoice-ocr-extract'),
+
     # API Router URLs
     path('api/', include(router.urls)),
-
-    # OCR Extraction endpoint
-    path('api/invoices/extract/', csrf_exempt(views.InvoiceOCRView.as_view()), name='invoice-ocr-extract'),
 
     # Authentication endpoints
     path('api/auth/login/', csrf_exempt(views.LoginView.as_view()), name='login'),
