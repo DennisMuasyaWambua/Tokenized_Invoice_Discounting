@@ -101,6 +101,14 @@ class Invoice(models.Model):
     # Document storage (for the actual invoice file)
     invoice_document = models.FileField(upload_to='invoices/', null=True, blank=True)
 
+    # KRA eTIMS Verification fields
+    supplier_kra_pin = models.CharField(max_length=20, null=True, blank=True, help_text="Supplier KRA PIN from eTIMS")
+    buyer_kra_pin = models.CharField(max_length=20, null=True, blank=True, help_text="Buyer KRA PIN from eTIMS")
+    kra_verified = models.BooleanField(default=False, help_text="Verified with KRA eTIMS system")
+    kra_verification_date = models.DateTimeField(null=True, blank=True, help_text="When KRA verification was performed")
+    kra_verification_response = models.JSONField(null=True, blank=True, help_text="Full KRA API response")
+    kra_verification_error = models.TextField(null=True, blank=True, help_text="Error message if verification failed")
+
     def __str__(self):
         return f"{self.invoice_number} - KES {self.invoice_amount}"
 

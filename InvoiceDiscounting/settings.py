@@ -276,3 +276,10 @@ OCR_SETTINGS = {
     'CLEANUP_TEMP_FILES': True,
     'LOG_OCR_ATTEMPTS': True,
 }
+
+# KRA eTIMS API Configuration
+KRA_API_BASE_URL = os.getenv('KRA_API_BASE_URL', 'https://sbx.kra.go.ke')
+KRA_CONSUMER_KEY = os.getenv('KRA_CONSUMER_KEY', '')
+KRA_CONSUMER_SECRET = os.getenv('KRA_CONSUMER_SECRET', '')
+KRA_API_TIMEOUT = int(os.getenv('KRA_API_TIMEOUT', '30'))
+KRA_VERIFICATION_ENABLED = os.getenv('KRA_VERIFICATION_ENABLED', 'True').lower() == 'true'

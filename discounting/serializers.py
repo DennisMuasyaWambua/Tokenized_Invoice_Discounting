@@ -152,7 +152,8 @@ class InvoiceUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = ['invoice_number', 'patientName', 'insurerName', 'amount',
-                 'invoice_date', 'due_date', 'serviceDescription', 'invoice_document']
+                 'invoice_date', 'due_date', 'serviceDescription', 'invoice_document',
+                 'supplier_kra_pin', 'buyer_kra_pin']
     
     def create(self, validated_data):
         request = self.context['request']
@@ -274,3 +275,6 @@ class InvoiceOCRResponseSerializer(serializers.Serializer):
         allow_empty=True
     )
     raw_text = serializers.CharField(required=False, allow_blank=True)
+
+    # KRA Verification fields
+    kra_verification = serializers.DictField(required=False, allow_null=True)

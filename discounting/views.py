@@ -318,9 +318,48 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             if not merged_data.get('insurerName') and ocr_extracted_data.get('seller_details', {}).get('name'):
                 merged_data['insurerName'] = ocr_extracted_data['seller_details']['name']
 
+            # Add KRA PINs to merged data if extracted
+            if ocr_extracted_data.get('supplier_kra_pin'):
+                merged_data['supplier_kra_pin'] = ocr_extracted_data['supplier_kra_pin']
+            if ocr_extracted_data.get('buyer_kra_pin'):
+                merged_data['buyer_kra_pin'] = ocr_extracted_data['buyer_kra_pin']
+
         serializer = InvoiceUploadSerializer(data=merged_data, context={'request': request})
         if serializer.is_valid():
             invoice = serializer.save()
+
+            # Perform KRA verification if OCR extracted data successfully
+            if ocr_extracted_data.get('extraction_success'):
+                try:
+                    from .utils.invoice_verification import verify_invoice_after_ocr
+                    logger.info(f"Performing KRA verification for invoice {invoice.invoice_number}")
+
+                    verification_result = verify_invoice_after_ocr(ocr_extracted_data)
+
+                    # Update invoice with verification results
+                    invoice.kra_verified = verification_result.get('verified', False)
+                    invoice.kra_verification_date = verification_result.get('verification_date')
+                    invoice.kra_verification_response = verification_result.get('kra_response')
+                    invoice.kra_verification_error = verification_result.get('error')
+
+                    # Save KRA PINs if not already set
+                    if not invoice.supplier_kra_pin and ocr_extracted_data.get('supplier_kra_pin'):
+                        invoice.supplier_kra_pin = ocr_extracted_data['supplier_kra_pin']
+                    if not invoice.buyer_kra_pin and ocr_extracted_data.get('buyer_kra_pin'):
+                        invoice.buyer_kra_pin = ocr_extracted_data['buyer_kra_pin']
+
+                    invoice.save()
+
+                    logger.info(
+                        f"Invoice {invoice.invoice_number} created with KRA verification: "
+                        f"verified={invoice.kra_verified}"
+                    )
+                except Exception as e:
+                    logger.error(f"KRA verification failed during invoice creation: {str(e)}")
+                    # Don't fail the invoice creation if verification fails
+                    invoice.kra_verification_error = f"Verification error: {str(e)}"
+                    invoice.save()
+
             return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -740,6 +779,25 @@ class InvoiceOCRView(APIView):
             from .utils.etims_parser import ETIMSInvoiceParser
             parser = ETIMSInvoiceParser()
             extracted_data = parser.parse_invoice(ocr_result['text'])
+
+            # Verify invoice with KRA eTIMS API
+            from .utils.invoice_verification import verify_invoice_after_ocr
+            logger.info(f"Initiating KRA verification for invoice: {extracted_data.get('invoice_number')}")
+
+            verification_result = verify_invoice_after_ocr(extracted_data)
+
+            # Add verification results to extracted data
+            extracted_data['kra_verification'] = {
+                'verified': verification_result.get('verified'),
+                'verification_date': verification_result.get('verification_date').isoformat() if verification_result.get('verification_date') else None,
+                'error': verification_result.get('error'),
+                'kra_response': verification_result.get('kra_response')
+            }
+
+            logger.info(
+                f"KRA verification completed: verified={verification_result.get('verified')}, "
+                f"error={verification_result.get('error')}"
+            )
 
             # Add raw text for debugging (optional, can be removed in production)
             if settings.DEBUG:
