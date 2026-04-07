@@ -153,20 +153,25 @@ class InvoiceUploadSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = ['invoice_number', 'patientName', 'insurerName', 'amount',
                  'invoice_date', 'due_date', 'serviceDescription', 'invoice_document',
-                 'supplier_kra_pin', 'buyer_kra_pin']
+                 'supplier_kra_pin', 'buyer_kra_pin', 'kra_verified', 'discount_rate',
+                 'advance_rate', 'advance_amount', 'retention_amount', 'status']
     
     def create(self, validated_data):
         request = self.context['request']
         user = request.user
-        
+
         # Remove fields that don't belong to Invoice model
         validated_data.pop('patientName', None)
         validated_data.pop('insurerName', None)
         validated_data.pop('serviceDescription', None)
-        
+
         # Set invoice_date to today if not provided
         validated_data['invoice_date'] = validated_data.get('invoice_date', timezone.now().date())
-        
+
+        # Ensure kra_verified is set to False if not provided
+        if 'kra_verified' not in validated_data:
+            validated_data['kra_verified'] = False
+
         # For now, create a simple contract if none exists
         contract, _ = Contract.objects.get_or_create(
             supplier=user,
@@ -178,7 +183,7 @@ class InvoiceUploadSerializer(serializers.ModelSerializer):
                 'date_to': '2025-12-31'
             }
         )
-        
+
         invoice = Invoice.objects.create(
             contract=contract,
             supplier=user,
