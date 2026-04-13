@@ -100,6 +100,20 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        """
+        Restrict users to only see their own profile.
+        Staff/admin users can see all users.
+        """
+        user = self.request.user
+
+        # Admins and staff can see all users
+        if user.is_staff or user.is_superuser:
+            return User.objects.all()
+
+        # Regular users can only see themselves
+        return User.objects.filter(id=user.id)
+
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.filter(is_active=True)

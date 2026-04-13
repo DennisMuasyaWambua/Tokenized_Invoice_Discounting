@@ -24,10 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*2x9gy+z9$r@8qd2zjq1cfnegpyld(z#)te_+ls(v6*3%t+snu'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-*2x9gy+z9$r@8qd2zjq1cfnegpyld(z#)te_+ls(v6*3%t+snu')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = ['tokenizedinvoicediscounting-production.up.railway.app', 'localhost','127.0.0.1']
 

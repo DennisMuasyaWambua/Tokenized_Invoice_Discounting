@@ -144,17 +144,32 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class InvoiceUploadSerializer(serializers.ModelSerializer):
-    patientName = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    insurerName = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    amount = serializers.DecimalField(source='invoice_amount', max_digits=15, decimal_places=2, required=False)
-    serviceDescription = serializers.CharField(default='Medical services', write_only=True, required=False)
+    # Legacy fields for backward compatibility - all optional
+    patientName = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    insurerName = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    amount = serializers.DecimalField(source='invoice_amount', max_digits=15, decimal_places=2, required=False, allow_null=True)
+    serviceDescription = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, default='Medical services')
 
     class Meta:
         model = Invoice
-        fields = ['invoice_number', 'patientName', 'insurerName', 'amount',
-                 'invoice_date', 'due_date', 'serviceDescription', 'invoice_document',
+        fields = ['invoice_number', 'invoice_amount', 'invoice_date', 'due_date',
+                 'patientName', 'insurerName', 'amount', 'serviceDescription', 'invoice_document',
                  'supplier_kra_pin', 'buyer_kra_pin', 'kra_verified', 'discount_rate',
                  'advance_rate', 'advance_amount', 'retention_amount', 'status']
+        extra_kwargs = {
+            'invoice_amount': {'required': False},
+            'invoice_date': {'required': False},
+            'due_date': {'required': False},
+            'discount_rate': {'required': False},
+            'advance_rate': {'required': False},
+            'advance_amount': {'required': False},
+            'retention_amount': {'required': False},
+            'status': {'required': False},
+            'supplier_kra_pin': {'required': False},
+            'buyer_kra_pin': {'required': False},
+            'kra_verified': {'required': False},
+            'invoice_document': {'required': False},
+        }
     
     def create(self, validated_data):
         request = self.context['request']
