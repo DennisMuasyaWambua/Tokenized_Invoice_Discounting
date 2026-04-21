@@ -102,17 +102,40 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Restrict users to only see their own profile.
-        Staff/admin users can see all users.
+        SECURITY: Restrict users to only see their own profile.
+        Only staff/admin users can see all users.
+
+        This prevents data exposure of sensitive user information like:
+        - Email addresses
+        - Mobile numbers
+        - Company names
+        - KRA PINs
         """
         user = self.request.user
 
-        # Admins and staff can see all users
-        if user.is_staff or user.is_superuser:
+        # Only superuser and staff can see all users
+        if user.is_superuser or user.is_staff:
             return User.objects.all()
 
-        # Regular users can only see themselves
+        # Regular users (suppliers, buyers, financiers) can only see themselves
         return User.objects.filter(id=user.id)
+
+    def list(self, request, *args, **kwargs):
+        """Override list to add additional security logging"""
+        import logging
+        logger = logging.getLogger('discounting.security')
+
+        queryset = self.get_queryset()
+        user_count = queryset.count()
+
+        # Log if non-staff user is seeing more than their own profile
+        if not (request.user.is_staff or request.user.is_superuser) and user_count > 1:
+            logger.warning(
+                f"SECURITY ALERT: Non-staff user {request.user.id} ({request.user.email}) "
+                f"accessed {user_count} user profiles. This should not happen."
+            )
+
+        return super().list(request, *args, **kwargs)
 
 
 class RoleViewSet(viewsets.ModelViewSet):

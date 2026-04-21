@@ -157,6 +157,7 @@ class InvoiceUploadSerializer(serializers.ModelSerializer):
                  'supplier_kra_pin', 'buyer_kra_pin', 'kra_verified', 'discount_rate',
                  'advance_rate', 'advance_amount', 'retention_amount', 'status']
         extra_kwargs = {
+            'invoice_number': {'required': False},
             'invoice_amount': {'required': False},
             'invoice_date': {'required': False},
             'due_date': {'required': False},
@@ -170,7 +171,7 @@ class InvoiceUploadSerializer(serializers.ModelSerializer):
             'kra_verified': {'required': False},
             'invoice_document': {'required': False},
         }
-    
+
     def create(self, validated_data):
         request = self.context['request']
         user = request.user
@@ -183,9 +184,24 @@ class InvoiceUploadSerializer(serializers.ModelSerializer):
         # Set invoice_date to today if not provided
         validated_data['invoice_date'] = validated_data.get('invoice_date', timezone.now().date())
 
-        # Ensure kra_verified is set to False if not provided
-        if 'kra_verified' not in validated_data:
+        # CRITICAL: Ensure kra_verified is always False, never None
+        # Check for both missing and None values
+        if 'kra_verified' not in validated_data or validated_data.get('kra_verified') is None:
             validated_data['kra_verified'] = False
+
+        # Set default values for required Invoice model fields if not provided
+        if 'invoice_number' not in validated_data or not validated_data.get('invoice_number'):
+            # Generate a unique invoice number
+            import uuid
+            validated_data['invoice_number'] = f'INV-{user.id}-{timezone.now().strftime("%Y%m%d")}-{uuid.uuid4().hex[:6].upper()}'
+
+        if 'invoice_amount' not in validated_data or not validated_data.get('invoice_amount'):
+            validated_data['invoice_amount'] = 0.00
+
+        if 'due_date' not in validated_data or not validated_data.get('due_date'):
+            # Default to 30 days from invoice date
+            from datetime import timedelta
+            validated_data['due_date'] = validated_data['invoice_date'] + timedelta(days=30)
 
         # For now, create a simple contract if none exists
         contract, _ = Contract.objects.get_or_create(
