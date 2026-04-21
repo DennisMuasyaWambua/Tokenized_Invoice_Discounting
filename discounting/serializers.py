@@ -144,28 +144,65 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class InvoiceUploadSerializer(serializers.ModelSerializer):
-    patientName = serializers.CharField(write_only=True)
-    insurerName = serializers.CharField(write_only=True)
-    amount = serializers.DecimalField(source='invoice_amount', max_digits=15, decimal_places=2)
-    serviceDescription = serializers.CharField(default='Medical services', write_only=True)
-    
+    # Legacy fields for backward compatibility - all optional
+    patientName = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    insurerName = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    amount = serializers.DecimalField(source='invoice_amount', max_digits=15, decimal_places=2, required=False, allow_null=True)
+    serviceDescription = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, default='Medical services')
+
     class Meta:
         model = Invoice
-        fields = ['invoice_number', 'patientName', 'insurerName', 'amount', 
-                 'due_date', 'serviceDescription', 'invoice_document']
-    
+        fields = ['invoice_number', 'invoice_amount', 'invoice_date', 'due_date',
+                 'patientName', 'insurerName', 'amount', 'serviceDescription', 'invoice_document',
+                 'supplier_kra_pin', 'buyer_kra_pin', 'kra_verified', 'discount_rate',
+                 'advance_rate', 'advance_amount', 'retention_amount', 'status']
+        extra_kwargs = {
+            'invoice_number': {'required': False},
+            'invoice_amount': {'required': False},
+            'invoice_date': {'required': False},
+            'due_date': {'required': False},
+            'discount_rate': {'required': False},
+            'advance_rate': {'required': False},
+            'advance_amount': {'required': False},
+            'retention_amount': {'required': False},
+            'status': {'required': False},
+            'supplier_kra_pin': {'required': False},
+            'buyer_kra_pin': {'required': False},
+            'kra_verified': {'required': False},
+            'invoice_document': {'required': False},
+        }
+
     def create(self, validated_data):
         request = self.context['request']
         user = request.user
-        
+
         # Remove fields that don't belong to Invoice model
         validated_data.pop('patientName', None)
         validated_data.pop('insurerName', None)
         validated_data.pop('serviceDescription', None)
-        
+
         # Set invoice_date to today if not provided
         validated_data['invoice_date'] = validated_data.get('invoice_date', timezone.now().date())
-        
+
+        # CRITICAL: Ensure kra_verified is always False, never None
+        # Check for both missing and None values
+        if 'kra_verified' not in validated_data or validated_data.get('kra_verified') is None:
+            validated_data['kra_verified'] = False
+
+        # Set default values for required Invoice model fields if not provided
+        if 'invoice_number' not in validated_data or not validated_data.get('invoice_number'):
+            # Generate a unique invoice number
+            import uuid
+            validated_data['invoice_number'] = f'INV-{user.id}-{timezone.now().strftime("%Y%m%d")}-{uuid.uuid4().hex[:6].upper()}'
+
+        if 'invoice_amount' not in validated_data or not validated_data.get('invoice_amount'):
+            validated_data['invoice_amount'] = 0.00
+
+        if 'due_date' not in validated_data or not validated_data.get('due_date'):
+            # Default to 30 days from invoice date
+            from datetime import timedelta
+            validated_data['due_date'] = validated_data['invoice_date'] + timedelta(days=30)
+
         # For now, create a simple contract if none exists
         contract, _ = Contract.objects.get_or_create(
             supplier=user,
@@ -177,7 +214,7 @@ class InvoiceUploadSerializer(serializers.ModelSerializer):
                 'date_to': '2025-12-31'
             }
         )
-        
+
         invoice = Invoice.objects.create(
             contract=contract,
             supplier=user,
@@ -222,11 +259,11 @@ class KYCDocumentUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = KYCDocument
         fields = ['document_type', 'document_file']
-    
+
     def create(self, validated_data):
         user = self.context['request'].user
         document_type = validated_data['document_type']
-        
+
         # Update existing document or create new one
         kyc_doc, _ = KYCDocument.objects.update_or_create(
             user=user,
@@ -234,3 +271,46 @@ class KYCDocumentUploadSerializer(serializers.ModelSerializer):
             defaults={'document_file': validated_data['document_file']}
         )
         return kyc_doc
+
+
+class InvoiceOCRRequestSerializer(serializers.Serializer):
+    """Validates file upload for OCR extraction."""
+    invoice_document = serializers.FileField(required=True)
+
+    def validate_invoice_document(self, value):
+        """Validate invoice file using InvoiceFileValidator."""
+        from .validators import InvoiceFileValidator
+
+        validator = InvoiceFileValidator()
+        validator.validate(value)
+        return value
+
+
+class InvoiceOCRResponseSerializer(serializers.Serializer):
+    """Returns extracted invoice data from OCR."""
+    invoice_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    invoice_amount = serializers.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        required=False,
+        allow_null=True
+    )
+    invoice_date = serializers.DateField(required=False, allow_null=True)
+    due_date = serializers.DateField(required=False, allow_null=True)
+    supplier_kra_pin = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    buyer_kra_pin = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    buyer_details = serializers.DictField(required=False, allow_null=True)
+    seller_details = serializers.DictField(required=False, allow_null=True)
+
+    # Metadata fields
+    confidence_scores = serializers.DictField(required=False)
+    extraction_success = serializers.BooleanField(default=False)
+    extraction_errors = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True
+    )
+    raw_text = serializers.CharField(required=False, allow_blank=True)
+
+    # KRA Verification fields
+    kra_verification = serializers.DictField(required=False, allow_null=True)

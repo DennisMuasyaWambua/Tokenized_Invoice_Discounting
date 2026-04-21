@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
 import os, dj_database_url
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +24,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*2x9gy+z9$r@8qd2zjq1cfnegpyld(z#)te_+ls(v6*3%t+snu'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-*2x9gy+z9$r@8qd2zjq1cfnegpyld(z#)te_+ls(v6*3%t+snu')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['tokenizedinvoicediscounting-production.up.railway.app', 'localhost']
+ALLOWED_HOSTS = ['tokenizedinvoicediscounting-production.up.railway.app', 'localhost','127.0.0.1']
 
 
 # Application definition
@@ -40,6 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'corsheaders',
     'discounting',
@@ -50,11 +55,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Disable CSRF for API endpoints
+CSRF_COOKIE_SECURE = False
+CSRF_USE_SESSIONS = False
 
 ROOT_URLCONF = 'InvoiceDiscounting.urls'
 
@@ -78,13 +86,22 @@ WSGI_APPLICATION = 'InvoiceDiscounting.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-DATABASES = {
-    'default': dj_database_url.parse(
-        f"{os.getenv('DATABASE_URL')}",
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+if os.getenv('ENV') == 'production':
+    DATABASES = {
+        'default': dj_database_url.parse(
+            f"{os.getenv('DATABASE_URL')}",
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            f"{os.getenv('DATABASE_LOCAL_URL')}",
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
 
 
 # Password validation
@@ -138,8 +155,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -150,6 +166,25 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Simple JWT settings
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
 # CORS settings for frontend integration
@@ -167,9 +202,84 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 # drf-spectacular settings
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Invoice Discounting Platform API',
-    'DESCRIPTION': 'API for the Tokenized Invoice Discounting Platform - A blockchain-enabled platform for invoice financing.',
+    'DESCRIPTION': """
+    API for the Tokenized Invoice Discounting Platform - A blockchain-enabled platform for invoice financing.
+
+    ## Key Features
+
+    ### 🤖 OCR Invoice Extraction
+    Automatically extract invoice data from eTIMS invoices using OCR technology:
+    - Upload PDF or image files (JPG, PNG)
+    - Extract invoice numbers, amounts, dates, and KRA PINs
+    - Get confidence scores for extracted fields
+    - Support for Kenya Revenue Authority eTIMS format
+
+    ### 💰 Invoice Management
+    - Submit invoices for discounting
+    - Track invoice status (pending, approved, funded, settled)
+    - Real-time funding requests
+    - Payment tracking with M-Pesa integration
+
+    ### 👥 User Management
+    - Multi-role support (Supplier, Buyer, Financier)
+    - KYC document verification
+    - JWT authentication
+
+    ### 📊 Dashboard & Analytics
+    - Real-time statistics
+    - Funding history
+    - Credit profile tracking
+
+    ## Authentication
+    Most endpoints require JWT authentication. Include the access token in the Authorization header:
+    ```
+    Authorization: Bearer <your_access_token>
+    ```
+
+    ## OCR Workflow
+    1. **Extract data:** POST to `/api/invoices/extract/` with invoice file
+    2. **Review:** Frontend displays extracted data with confidence scores
+    3. **Create:** POST to `/api/invoices/` with confirmed data
+
+    Or use the one-step approach:
+    - POST directly to `/api/invoices/` with invoice file - OCR runs automatically!
+    """,
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
     'SCHEMA_PATH_PREFIX': '/api/',
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+        'filter': True,
+    },
+    'TAGS': [
+        {'name': 'Invoice OCR', 'description': 'OCR-powered invoice data extraction from eTIMS documents'},
+        {'name': 'Invoices', 'description': 'Invoice management and discounting operations'},
+        {'name': 'Authentication', 'description': 'User authentication and JWT token management'},
+        {'name': 'Users', 'description': 'User profile and management'},
+        {'name': 'KYC', 'description': 'KYC document upload and verification'},
+        {'name': 'Contracts', 'description': 'Buyer-Supplier contract management'},
+        {'name': 'Payments', 'description': 'Payment tracking and M-Pesa integration'},
+        {'name': 'Dashboard', 'description': 'Dashboard statistics and analytics'},
+    ],
 }
+
+# OCR Configuration
+OCR_SETTINGS = {
+    'SUPPORTED_FORMATS': ['pdf', 'jpg', 'jpeg', 'png'],
+    'MAX_FILE_SIZE': 10 * 1024 * 1024,  # 10MB
+    'TESSERACT_CONFIG': '--oem 3 --psm 6',  # LSTM engine, uniform text block
+    'TESSERACT_LANG': 'eng',
+    'TEMP_UPLOAD_DIR': 'temp/ocr_uploads/',
+    'CLEANUP_TEMP_FILES': True,
+    'LOG_OCR_ATTEMPTS': True,
+}
+
+# KRA eTIMS API Configuration
+KRA_API_BASE_URL = os.getenv('KRA_API_BASE_URL', 'https://sbx.kra.go.ke')
+KRA_CONSUMER_KEY = os.getenv('KRA_CONSUMER_KEY', '')
+KRA_CONSUMER_SECRET = os.getenv('KRA_CONSUMER_SECRET', '')
+KRA_API_TIMEOUT = int(os.getenv('KRA_API_TIMEOUT', '30'))
+KRA_VERIFICATION_ENABLED = os.getenv('KRA_VERIFICATION_ENABLED', 'True').lower() == 'true'
