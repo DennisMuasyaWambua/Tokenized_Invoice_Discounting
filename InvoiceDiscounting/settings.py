@@ -86,21 +86,23 @@ WSGI_APPLICATION = 'InvoiceDiscounting.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-if os.getenv('ENV') == 'production':
+DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('DATABASE_LOCAL_URL')
+
+if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(
-            f"{os.getenv('DATABASE_URL')}",
+            DATABASE_URL,
             conn_max_age=600,
             conn_health_checks=True,
         )
     }
 else:
+    # Fallback to SQLite if no database URL is provided
     DATABASES = {
-        'default': dj_database_url.parse(
-            f"{os.getenv('DATABASE_LOCAL_URL')}",
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
 
 
