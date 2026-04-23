@@ -27,7 +27,7 @@ from .serializers import (
 @method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)

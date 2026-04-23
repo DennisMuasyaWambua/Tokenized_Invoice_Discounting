@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'discounting',
 ]
 
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

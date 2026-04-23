@@ -3,6 +3,56 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from .models import User, Role, Invoice, Contract, Payment, KYCDocument
 from django.contrib.auth.password_validation import validate_password
+import base64
+import uuid
+from django.core.files.base import ContentFile
+
+
+class Base64ImageField(serializers.Field):
+    """
+    A field to handle base64 encoded images.
+    Accepts both base64 strings (with data URI prefix) and file uploads.
+    """
+    def to_internal_value(self, data):
+        # If it's already a file, return it as is
+        if hasattr(data, 'read'):
+            return data
+
+        # If it's a string, assume it's base64
+        if isinstance(data, str):
+            # Check if it's a data URI
+            if data.startswith('data:'):
+                # Extract the base64 data
+                try:
+                    # Format: data:image/jpeg;base64,/9j/4AAQSkZJRg...
+                    format_str, base64_str = data.split(';base64,')
+                    ext = format_str.split('/')[-1]  # Get file extension (jpeg, png, etc.)
+
+                    # Decode base64 string
+                    decoded_file = base64.b64decode(base64_str)
+
+                    # Generate a unique filename
+                    file_name = f"{uuid.uuid4()}.{ext}"
+
+                    # Create a ContentFile
+                    return ContentFile(decoded_file, name=file_name)
+                except (ValueError, TypeError) as e:
+                    raise serializers.ValidationError(f"Invalid base64 image: {str(e)}")
+            else:
+                # Plain base64 without data URI
+                try:
+                    decoded_file = base64.b64decode(data)
+                    file_name = f"{uuid.uuid4()}.jpg"  # Default to jpg
+                    return ContentFile(decoded_file, name=file_name)
+                except (ValueError, TypeError) as e:
+                    raise serializers.ValidationError(f"Invalid base64 image: {str(e)}")
+
+        raise serializers.ValidationError("Invalid image data")
+
+    def to_representation(self, value):
+        if value:
+            return value.url
+        return None
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -38,10 +88,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True)
     role_name = serializers.CharField(write_only=True)
     
-    # KYC Document fields
-    national_id = serializers.FileField(required=False, write_only=True)
-    business_certificate = serializers.FileField(required=False, write_only=True)
-    kra_certificate = serializers.FileField(required=False, write_only=True)
+    # KYC Document fields - accepts both base64 strings and file uploads
+    national_id = Base64ImageField(required=False, write_only=True)
+    business_certificate = Base64ImageField(required=False, write_only=True)
+    kra_certificate = Base64ImageField(required=False, write_only=True)
     
     class Meta:
         model = User
